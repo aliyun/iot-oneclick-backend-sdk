@@ -26,5 +26,5 @@
 
 ## 接入代码
 
-1. 实现业务消息处理接口`MessageProcessor`。参考example目录下的`ExampleMessageProcessor`
-1. 初始化并启动`MessageLoop`。参考example目录下的`ExampleBiz`
+1. 实现业务消息处理接口`MessageProcessor`。参考[example](src/main/java/com/aliyun/oneclick/example)目录下的`ExampleMessageProcessor`
+1. 初始化并启动`MessageLoop`。参考[example](src/main/java/com/aliyun/oneclick/example)目录下的`ExampleBiz`
