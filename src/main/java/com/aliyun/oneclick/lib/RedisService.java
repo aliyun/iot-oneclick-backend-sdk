@@ -1,34 +1,36 @@
 package com.aliyun.oneclick.lib;
 
 import com.alibaba.fastjson.JSON;
-import org.springframework.data.redis.connection.jedis.JedisConnection;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 /**
  * Created by zhirui.rzr on 2016/11/8.
  */
 public class RedisService {
-    JedisConnectionFactory connectionFactory;
+    JedisPool jedisPool;
     String prefix;
 
     public RedisService() {
 
     }
 
-    public RedisService(JedisConnectionFactory connectionFactory, String prefix) {
-        this.connectionFactory = connectionFactory;
-        this.prefix = "";
+    public RedisService(JedisPool jedisPool, String prefix) {
+        this.jedisPool = jedisPool;
+        this.prefix = prefix;
     }
 
-    public RedisService(JedisConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
+
+    public RedisService(JedisPool jedisPool) {
+        this.jedisPool = jedisPool;
+        this.prefix = "";
     }
 
     public void pushQueue(final String key, final String value) {
         new RedisOp<Long>(){
             @Override
-            public Long operate(JedisConnection redis) {
-                return redis.lPush(getRedisKey(key), value.getBytes());
+            public Long operate(Jedis redis) {
+                return redis.lpush(getRedisKey(key), value.getBytes());
             }
         }.run();
     }
@@ -36,8 +38,8 @@ public class RedisService {
     public String popQueue(final String key) {
         return new RedisOp<String>() {
             @Override
-            public String operate(JedisConnection redis) {
-                byte[] data = redis.bRPop(0, getRedisKey(key)).get(1);
+            public String operate(Jedis redis) {
+                byte[] data = redis.brpop(0, getRedisKey(key)).get(1);
                 return data == null ? null : new String(data);
             }
         }.run();
@@ -46,7 +48,7 @@ public class RedisService {
     public String get(final String key) {
         return new RedisOp<String>() {
             @Override
-            public String operate(JedisConnection redis) {
+            public String operate(Jedis redis) {
                 byte[] data = redis.get(getRedisKey(key));
                 return data == null ? null : new String(data);
             }
@@ -81,13 +83,15 @@ public class RedisService {
         return (prefix + key).getBytes();
     }
 
-    public void set(final String key, final Object value, final long expire) {
+    public void set(final String key, final Object value, final int expire) {
         new RedisOp() {
             @Override
-            public Object operate(JedisConnection redis) {
-                byte[] keyBytes = getRedisKey(key);
-                redis.set(keyBytes, String.valueOf(value).getBytes());
-                if (expire > 0) redis.expire(keyBytes, expire);
+            public Object operate(Jedis redis) {
+                if (expire > 0) {
+                    redis.setex(key, expire, String.valueOf(value));
+                } else {
+                    redis.set(key, String.valueOf(value));
+                }
                 return null;
             }
         }.run();
@@ -97,7 +101,7 @@ public class RedisService {
         set(key, value, 0);
     }
 
-    public void setObject(final String key, final Object obj, final long expire) {
+    public void setObject(final String key, final Object obj, final int expire) {
         set(key, JSON.toJSONString(obj), expire);
     }
 
@@ -108,18 +112,18 @@ public class RedisService {
     public void del(final String key) {
         new RedisOp() {
             @Override
-            protected Object operate(JedisConnection redis) {
+            protected Object operate(Jedis redis) {
                 return redis.del(getRedisKey(key));
             }
         }.run();
     }
 
-    public JedisConnectionFactory getConnectionFactory() {
-        return connectionFactory;
+    public JedisPool getJedisPool() {
+        return jedisPool;
     }
 
-    public void setConnectionFactory(JedisConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
+    public void setJedisPool(JedisPool jedisPool) {
+        this.jedisPool = jedisPool;
     }
 
     public String getPrefix() {
@@ -130,10 +134,14 @@ public class RedisService {
         this.prefix = prefix;
     }
 
+    public void close() {
+        jedisPool.destroy();
+    }
+
     abstract class RedisOp<T> {
-        protected abstract T operate(JedisConnection redis);
+        protected abstract T operate(Jedis redis);
         public T run() {
-            JedisConnection redis = connectionFactory.getConnection();
+            Jedis redis = jedisPool.getResource();
             try {
                 return operate(redis);
             } finally {

@@ -15,7 +15,7 @@ import com.aliyuncs.profile.IClientProfile;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import redis.clients.jedis.JedisPool;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -28,9 +28,9 @@ public class MessageLoop {
     String endpoint;
     String queueName;
     Long productKey;
-    JedisConnectionFactory connectionFactory;
+    RedisService redisService;
     MessageProcessor messageProcessor;
-    long seqTimeout = 60000;
+    int seqTimeout = 60000;
     String redisPrefix = "";
     int version = 1;
     int batchSize = 16;
@@ -41,10 +41,9 @@ public class MessageLoop {
     CloudQueue queue;
     IClientProfile profile;
     DefaultAcsClient acsClient;
-    RedisService redisService;
     Logger logger = LogManager.getLogger(MessageLoop.class);
     Thread thread = null;
-    boolean started = false;
+    volatile boolean started = false;
 
     /**
      * 初始化实例
@@ -54,26 +53,17 @@ public class MessageLoop {
      * @param endpoint 消息队列的endpoint(可从消息队列控制台获得)
      * @param queueName 消息队列名称
      * @param productKey IoT平台上注册的产品编号
-     * @param connectionFactory redis连接配置
+     * @param jedisPool redis连接池
      * @param messageProcessor 自定义的设备消息处理器
      */
-    public MessageLoop(String region, String accessKeyId, String accessKeySecret, String endpoint, String queueName, Long productKey, JedisConnectionFactory connectionFactory, MessageProcessor messageProcessor) {
+    public MessageLoop(String region, String accessKeyId, String accessKeySecret, String endpoint, String queueName, Long productKey, JedisPool jedisPool, MessageProcessor messageProcessor) {
         this.region = region;
         this.accessKeyId = accessKeyId;
         this.accessKeySecret = accessKeySecret;
         this.endpoint = endpoint;
         this.queueName = queueName;
         this.productKey = productKey;
-        this.connectionFactory = connectionFactory;
         this.messageProcessor = messageProcessor;
-    }
-
-    /**
-     * 启动消息处理循环线程
-     */
-    public void start() {
-        // redis配置
-        redisService = new RedisService(connectionFactory, redisPrefix);
 
         // 初始化队列使用
         account = new CloudAccount(accessKeyId, accessKeySecret, endpoint); // ak和endpoint
@@ -81,9 +71,7 @@ public class MessageLoop {
         queue = mnsClient.getQueueRef(queueName); // queueName为队列名称，如：order-ops
         profile = DefaultProfile.getProfile(region, accessKeyId, accessKeySecret); // 用ak和region组成profile
         acsClient = new DefaultAcsClient(profile); // 创建acs client
-
-        // 启动消息处理循环线程
-        startMessageLoop();
+        this.redisService = new RedisService(jedisPool);
     }
 
     /**
@@ -104,15 +92,15 @@ public class MessageLoop {
     /**
      * 启动处理消息循环的线程，主程序退出时会自动退出。
      */
-    public void startMessageLoop() {
-        startMessageLoop(true); // 默认为daemon线程
+    public void start() {
+        start(true); // 默认为daemon线程
     }
 
     /**
      * 启动处理消息循环的线程
      * @param daemon 是否daemon线程（如果为true，主线程退出时会自动退出）
      */
-    public void startMessageLoop(boolean daemon) {
+    public void start(boolean daemon) {
         thread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -128,9 +116,14 @@ public class MessageLoop {
     /**
      * 进入消息队列读取循环
      */
-    private void loop() {
+    public void loop() {
         started = true;
         while (started) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             List<Message> messages = queue.batchPopMessage(batchSize, batchTimeout); // 阻塞式批量读取消息
             List<String> messageHandles = new LinkedList<>(); // 记录处理过的消息，以便在处理完后从消息队列中删除
             if (messages == null) continue;
@@ -140,6 +133,8 @@ public class MessageLoop {
             }
             queue.batchDeleteMessage(messageHandles); // 从消息队列中删除已经处理完的消息
         }
+        mnsClient.close();
+        redisService.close();
     }
 
     /**
@@ -348,12 +343,12 @@ public class MessageLoop {
         this.productKey = productKey;
     }
 
-    public JedisConnectionFactory getConnectionFactory() {
-        return connectionFactory;
+    public RedisService getRedisService() {
+        return redisService;
     }
 
-    public void setConnectionFactory(JedisConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
+    public void setRedisService(RedisService redisService) {
+        this.redisService = redisService;
     }
 
     public MessageProcessor getMessageProcessor() {
@@ -364,11 +359,11 @@ public class MessageLoop {
         this.messageProcessor = messageProcessor;
     }
 
-    public long getSeqTimeout() {
+    public int getSeqTimeout() {
         return seqTimeout;
     }
 
-    public void setSeqTimeout(long seqTimeout) {
+    public void setSeqTimeout(int seqTimeout) {
         this.seqTimeout = seqTimeout;
     }
 

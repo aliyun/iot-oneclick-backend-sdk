@@ -1,7 +1,9 @@
 package com.aliyun.oneclick.example;
 
 import com.aliyun.oneclick.lib.MessageLoop;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.Protocol;
 
 import java.io.IOException;
 
@@ -20,13 +22,11 @@ public class ExampleBiz {
         // IoT平台配置
         Long productKey = 12345L; // 在IoT平台上注册的产品号
         // redis配置
-        JedisConnectionFactory redis = new JedisConnectionFactory();
-        redis.setHostName("<redis主机地址>");
-        redis.setPort(6379); // redis端口
-        redis.setPassword("<redis密码>");
+        JedisPool jedisPool = new JedisPool(
+                new JedisPoolConfig(), "redis地址", 6379, Protocol.DEFAULT_TIMEOUT, "redis密码");
 
         // 初始化OneClickSDK
-        MessageLoop messageLoop = new MessageLoop(region, accessKeyId, accessKeySecret, endpoint, queueName, productKey, redis, new ExampleMessageProcessor());
+        MessageLoop messageLoop = new MessageLoop(region, accessKeyId, accessKeySecret, endpoint, queueName, productKey, jedisPool, new ExampleMessageProcessor());
         messageLoop.start(); // 启动消息循环
 
         // 挂起主线程（实际应用中可以是主服务循环）

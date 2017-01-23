@@ -23,13 +23,13 @@ public class ExampleMessageProcessor implements MessageProcessor {
                 System.out.println(String.format("user clicked the button %s", serial));
                 return Light.GREEN; // 亮绿灯
             case DOUBLE_CLICK: // 收到双击按键
-                System.out.println(String.format("user double click the button %s", serial));
+                System.out.println(String.format("user double clicked the button %s", serial));
                 return Light.MIX_BLINK; // 红绿混合闪烁
             case LONG_CLICK:  // 收到长按
                 System.out.println(String.format("user long clicked the button %s", serial));
                 return Light.GREEN_BLINK; // 绿灯闪烁
         }
-        System.out.println("something wrong happened");
+        System.out.println("other button clicked");
         return Light.RED; // 其它情况亮红灯
     }
 
