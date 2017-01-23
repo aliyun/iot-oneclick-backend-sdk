@@ -1,6 +1,6 @@
 # OneClick Backend SDK
 
-在一键触发场景下，串联阿里云物联网相关产品，处理物联网平台消息的SDK。
+在一键触发场景下，组合阿里云物联网相关产品，处理物联网平台消息的SDK。
 
 ## 主要流程
 
@@ -22,9 +22,9 @@
 
 ## 接入步骤
 
-详见文档：OneClick阿里云产品配置步骤
+详见文档：[产品配置步骤 for OneClick](Setup_For_OneClick.docx)
 
 ## 接入代码
 
-1. 实现业务消息处理接口`MessageProcessor`。参考example目录下的ExampleMessageProcessor
-1. 初始化并启动`MessageLoop`。参考example目录下的ExampleBiz
+1. 实现业务消息处理接口`MessageProcessor`。参考example目录下的`ExampleMessageProcessor`
+1. 初始化并启动`MessageLoop`。参考example目录下的`ExampleBiz`
