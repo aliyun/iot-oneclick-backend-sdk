@@ -1,0 +1,81 @@
+# Created by .ignore support plugin (hsz.mobi)
+.settings
+
+# FE
+FE/**/.idea/
+FE/**/bower_components/
+FE/**/_tmp/
+FE/**/build/
+FE/**/logs/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+ve/
+
+# C extensions
+
+# Distribution / packaging
+.Python
+env/
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Rope
+.ropeproject
+
+# Django stuff:
+*.log
+*.pot
+db.sqlite3
+
+# Sphinx documentation
+docs/_build/
+
+# vim
+*.swp
+
+# emacs
+*~
+
+# ide
+.idea/
+*.iml
+node_modules
+target
+out
+
+.DS_Store
+log.txt
+
+env.properties
