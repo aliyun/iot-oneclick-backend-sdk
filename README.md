@@ -22,7 +22,7 @@
 
 ## 接入步骤
 
-详见文档：[产品配置步骤 for OneClick](Setup_For_OneClick.docx)
+详见文档：[产品配置步骤 for OneClick](Setup_For_OneClick.pdf)
 
 ## 接入代码
 
