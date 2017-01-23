@@ -4,17 +4,16 @@ package com.aliyun.oneclick.lib;
  * Created by zhirui.rzr on 2017/1/22.
  */
 public enum Button {
-    CLICK(0),          // 单击按钮
-    DOUBLE_CLICK(2),   // 双击按钮
-    LONG_CLICK(1);     // 长按按钮
+    CLICK,          // 单击按钮
+    DOUBLE_CLICK,   // 双击按钮
+    LONG_CLICK;     // 长按按钮
 
-    int value;
-
-    Button(int value) {
-        this.value = value;
-    }
-
-    public int getValue() {
-        return value;
+    public static Button fromInt(int value) {
+        switch(value) {
+            case 0: return CLICK;
+            case 2: return DOUBLE_CLICK;
+            case 1: return LONG_CLICK;
+            default: return null;
+        }
     }
 }
